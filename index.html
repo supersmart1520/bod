@@ -927,20 +927,25 @@
       body {
         height: 100dvh;
         overflow: hidden;
+        padding-bottom: 0;
       }
 
       .layout {
         display: block;
       }
 
+      .mobile-tab-bar {
+        display: none !important;
+      }
+
       #pane-timetable {
         display: block !important;
         width: 100%;
-        height: calc(100dvh - 96px);
+        height: calc(100dvh - 84px);
         max-height: none;
         position: relative;
         z-index: 1;
-        overflow: hidden;
+        overflow: visible;
         box-shadow: 0 4px 16px rgba(0,0,0,.12);
       }
 
@@ -952,7 +957,7 @@
         bottom: 0;
         z-index: 120;
         width: auto;
-        height: 72dvh;
+        height: 52dvh;
         border-radius: 22px 22px 0 0;
         box-shadow: 0 -8px 28px rgba(0,0,0,.2);
         transform: translateY(calc(100% - 78px));
@@ -999,7 +1004,7 @@
       }
 
       #pane-settings > .section:last-child {
-        height: calc(72dvh - 78px);
+        height: calc(52dvh - 78px);
         display: flex;
         flex-direction: column;
         padding: 14px;
@@ -1015,8 +1020,7 @@
       }
 
       #pane-timetable .board-head {
-        min-height: 42px;
-        padding: 6px 10px;
+        display: none;
       }
 
       #pane-timetable .board-head p,
@@ -1025,17 +1029,21 @@
       }
 
       #pane-timetable .timeline-wrap {
-        height: calc(100% - 42px);
-        overflow: hidden;
+        height: 100%;
+        overflow: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
 
       #pane-timetable .timetable-page {
         height: 100%;
-        padding: 6px 5px;
+        width: 540px;
+        min-width: 540px;
+        padding: 4px 5px;
       }
 
       #pane-timetable .paper-header {
-        margin-bottom: 4px;
+        display: none;
       }
 
       #pane-timetable .paper-academy {
@@ -1050,6 +1058,7 @@
 
       #pane-timetable .paper-table {
         height: 100%;
+        min-width: 530px;
       }
 
       #pane-timetable .paper-table .time-cell,
@@ -1057,12 +1066,30 @@
         height: auto;
       }
 
-      #pane-timetable .class-block .subject {
+      #pane-timetable .paper-table col.time-col {
+        width: 32px;
+      }
+
+      #pane-timetable .paper-table thead th {
+        font-size: 11px;
+        padding: 6px 1px;
+      }
+
+      #pane-timetable .paper-table .time-cell {
         font-size: 10px;
+      }
+
+      #pane-timetable .class-block .subject {
+        font-size: 11px;
         line-height: 1.12;
       }
 
-      #pane-timetable .class-block .teacher,
+      #pane-timetable .class-block .teacher {
+        display: block;
+        font-size: 9px;
+        line-height: 1.1;
+      }
+
       #pane-timetable .class-block .room,
       #pane-timetable .class-block .time {
         display: none;
