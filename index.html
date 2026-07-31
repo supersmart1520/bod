@@ -699,6 +699,10 @@
       overflow-wrap: anywhere;
     }
 
+    .class-block .mobile-subject {
+      display: none;
+    }
+
     .class-block .teacher,
     .class-block .room,
     .class-block .time {
@@ -793,7 +797,9 @@
     .mobile-wallpaper-export .class-block .subject {
       font-size: 16px !important;
       line-height: 1.15 !important;
+      display: inline !important;
     }
+    .mobile-wallpaper-export .class-block .mobile-subject { display: none !important; }
     .mobile-wallpaper-export .class-block .teacher,
     .mobile-wallpaper-export .class-block .room,
     .mobile-wallpaper-export .class-block .time {
@@ -1037,8 +1043,8 @@
 
       #pane-timetable .timetable-page {
         height: 100%;
-        width: 540px;
-        min-width: 540px;
+        width: 100%;
+        min-width: 0;
         padding: 4px 5px;
       }
 
@@ -1058,7 +1064,8 @@
 
       #pane-timetable .paper-table {
         height: auto;
-        min-width: 530px;
+        width: 100%;
+        min-width: 0;
       }
 
       #pane-timetable .paper-table .time-cell,
@@ -1068,11 +1075,11 @@
       }
 
       #pane-timetable .paper-table col.time-col {
-        width: 32px;
+        width: 30px;
       }
 
       #pane-timetable .paper-table thead th {
-        font-size: 11px;
+        font-size: 10px;
         padding: 6px 1px;
       }
 
@@ -1081,13 +1088,21 @@
       }
 
       #pane-timetable .class-block .subject {
-        font-size: 11px;
+        display: none;
+      }
+
+      #pane-timetable .class-block .mobile-subject {
+        display: inline;
+        font-size: 9px;
+        font-weight: 800;
         line-height: 1.18;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
       }
 
       #pane-timetable .class-block .teacher {
         display: block;
-        font-size: 9px;
+        font-size: 8px;
         line-height: 1.15;
         margin-top: 3px;
       }
@@ -2004,6 +2019,7 @@
           return `<td class="slot" rowspan="${span}">
             <div class="class-block ${hasConflict ? "conflict" : ""}" data-course="${escapeHtml(course.id)}" style="background:${escapeHtml(color)};">
               <span class="subject">${escapeHtml(label)}</span>
+              <span class="mobile-subject">${escapeHtml(mobileCourseLabel(course, label))}</span>
               <span class="teacher">${escapeHtml(course.teacher)}</span>
               <span class="room">${escapeHtml(shortRoom(course.room))}</span>
               <span class="time">${escapeHtml(timeRange(course))}</span>
@@ -2035,6 +2051,16 @@
           </div>
         </div>
       `;
+    }
+
+    function mobileCourseLabel(course, fallback) {
+      const cleaned = String(course.title || fallback || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\([^)]*(?:개강|내신|특강|반)[^)]*\)/g, " ")
+        .replace(/[_·]\s*(?:월|화|수|목|금|토|일)+(?:\s*[-~]\s*(?:월|화|수|목|금|토|일)+)?\s*$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return cleaned || fallback;
     }
 
     function renderCases() {
