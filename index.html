@@ -957,10 +957,10 @@
         bottom: 0;
         z-index: 120;
         width: auto;
-        height: 52dvh;
+        height: 44dvh;
         border-radius: 22px 22px 0 0;
         box-shadow: 0 -8px 28px rgba(0,0,0,.2);
-        transform: translateY(calc(100% - 78px));
+        transform: translateY(calc(100% - 68px));
         transition: transform .28s ease;
         will-change: transform;
         overflow: hidden;
@@ -971,7 +971,7 @@
       }
 
       .mobile-sheet-handle {
-        height: 78px;
+        height: 68px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1004,7 +1004,7 @@
       }
 
       #pane-settings > .section:last-child {
-        height: calc(52dvh - 78px);
+        height: calc(44dvh - 68px);
         display: flex;
         flex-direction: column;
         padding: 14px;
@@ -1057,13 +1057,14 @@
       }
 
       #pane-timetable .paper-table {
-        height: 100%;
+        height: auto;
         min-width: 530px;
       }
 
       #pane-timetable .paper-table .time-cell,
       #pane-timetable .paper-table .slot {
-        height: auto;
+        height: 68px;
+        min-height: 68px;
       }
 
       #pane-timetable .paper-table col.time-col {
@@ -1081,13 +1082,14 @@
 
       #pane-timetable .class-block .subject {
         font-size: 11px;
-        line-height: 1.12;
+        line-height: 1.18;
       }
 
       #pane-timetable .class-block .teacher {
         display: block;
         font-size: 9px;
-        line-height: 1.1;
+        line-height: 1.15;
+        margin-top: 3px;
       }
 
       #pane-timetable .class-block .room,
@@ -1816,7 +1818,7 @@
       let moved = false;
       let suppressClick = false;
 
-      const closedOffset = () => Math.max(0, panel.getBoundingClientRect().height - 78);
+      const closedOffset = () => Math.max(0, panel.getBoundingClientRect().height - handle.getBoundingClientRect().height);
       const setOpen = open => {
         panel.classList.toggle("sheet-open", open);
         handle.setAttribute("aria-expanded", String(open));
