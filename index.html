@@ -103,6 +103,8 @@
       overflow: hidden;
     }
 
+    .mobile-sheet-handle { display: none; }
+
     .section {
       padding: 16px;
       border-bottom: 1px solid var(--line);
@@ -914,40 +916,102 @@
       .paper-table .time-cell, .paper-table .slot { height: 46px; }
       .paper-table .time-cell { font-size: 9px; }
       .class-block { inset: 1px; padding: 1px; }
-      .class-block .subject { font-size: 8px; line-height: 1.15; }
-      .class-block .teacher, .class-block .room, .class-block .time { font-size: 7px; line-height: 1.1; }
+      .class-block .subject { font-size: 10px; line-height: 1.15; }
+      .class-block .teacher, .class-block .room, .class-block .time { font-size: 8px; line-height: 1.1; }
       .paper-clinics p { font-size: 12px; line-height: 2; }
       .paper-footer p { font-size: 11px; line-height: 1.9; }
 
       .grade-btn, .subject-btn { min-height: 46px; font-size: 14px; }
 
-      /* 모바일: 시간표를 먼저, 수업 목록을 바로 아래에 표시 */
+      /* 모바일: 시간표는 고정하고 수업 목록은 끌어올리는 바텀시트 */
+      body {
+        height: 100dvh;
+        overflow: hidden;
+      }
+
       .layout {
-        display: flex;
-        flex-direction: column;
+        display: block;
       }
 
       #pane-timetable {
-        order: 1;
         display: block !important;
         width: 100%;
-        position: sticky;
-        top: 0;
-        z-index: 30;
-        max-height: 58vh;
+        height: calc(100dvh - 96px);
+        max-height: none;
+        position: relative;
+        z-index: 1;
         overflow: hidden;
-        box-shadow: 0 6px 18px rgba(0,0,0,.14);
+        box-shadow: 0 4px 16px rgba(0,0,0,.12);
       }
 
       #pane-settings {
-        order: 2;
         display: block !important;
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 0;
+        z-index: 120;
+        width: auto;
+        height: 72dvh;
+        border-radius: 22px 22px 0 0;
+        box-shadow: 0 -8px 28px rgba(0,0,0,.2);
+        transform: translateY(calc(100% - 78px));
+        transition: transform .28s ease;
+        will-change: transform;
+        overflow: hidden;
+      }
+
+      #pane-settings.sheet-open {
+        transform: translateY(0);
+      }
+
+      .mobile-sheet-handle {
+        height: 78px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 10px 18px 8px;
         width: 100%;
+        background: #ffffff;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .mobile-sheet-handle::before {
+        content: "";
+        width: 46px;
+        height: 5px;
+        border-radius: 999px;
+        background: #c9c9c9;
+      }
+
+      .mobile-sheet-handle strong {
+        width: 100%;
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1;
+        text-align: left;
+      }
+
+      #pane-settings > .section:last-child {
+        height: calc(72dvh - 78px);
+        display: flex;
+        flex-direction: column;
+        padding: 14px;
       }
 
       .course-list {
+        flex: 1;
+        min-height: 0;
         max-height: none;
-        overflow: visible;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-bottom: 24px;
       }
 
       #pane-timetable .board-head {
@@ -961,7 +1025,7 @@
       }
 
       #pane-timetable .timeline-wrap {
-        height: calc(58vh - 42px);
+        height: calc(100% - 42px);
         overflow: hidden;
       }
 
@@ -993,16 +1057,38 @@
         height: auto;
       }
 
+      #pane-timetable .class-block .subject {
+        font-size: 10px;
+        line-height: 1.12;
+      }
+
+      #pane-timetable .class-block .teacher,
+      #pane-timetable .class-block .room,
+      #pane-timetable .class-block .time {
+        display: none;
+      }
+
       #pane-timetable .paper-clinics,
       #pane-timetable .paper-footer {
         display: none;
       }
+
+      .topbar {
+        min-height: 66px;
+        margin-bottom: 8px;
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+      }
+
+      .topbar h1 { font-size: 18px; }
+      .topbar .subtitle { display: none; }
     }
 
     /* 간편 화면: 학년·과목 선택 마법사와 선택 내역을 숨기고
        수업 목록 + 시간표만 유지 */
-    #pane-settings > .section:nth-child(1),
-    #pane-settings > .section:nth-child(2),
+    #pane-settings > .section:nth-of-type(1),
+    #pane-settings > .section:nth-of-type(2),
     .mobile-tab-bar {
       display: none !important;
     }
@@ -1099,6 +1185,9 @@
     <div class="layout">
       <!-- ── 설정 탭 ── -->
       <aside class="panel tab-pane tab-active" id="pane-settings">
+        <button class="mobile-sheet-handle" id="mobileSheetHandle" type="button" aria-expanded="false">
+          <strong>수업 선택</strong>
+        </button>
 
         <!-- 학년 · 과목 선택 (wizard) -->
         <section class="section">
@@ -1236,7 +1325,7 @@
     const FALLBACK_COLOR = "#8bc7ba";
     const GRADE_ORDER = ["초5-6","중1","중2","중3","고1","고2","고3"];
     const SUBJECT_ORDER = ["국어","수학","영어","중국어","일본어"];
-    const SCHOOL_ORDER = ["과천중","율목중","문원중","과천고","외고","과천여고","중앙고","인덕원고","공통"];
+    const SCHOOL_ORDER = ["과천중","율목중","문원중","과천고","외고","과천여고","중앙고","인덕원고"];
     const WIZARD_GRADES = ["초5-6","중1","중2","중3"];
     const EXCLUDED_SUBJECTS = new Set(["과학", "과탐", "물리"]);
 
@@ -1268,8 +1357,8 @@
     render();
 
     /* ── Google Sheets live data ── */
-    const SHEET_ID = "1-hZd8xJtKUstiodoQI8jW52g22mjTyzoiLasr68x2-E";
-    const SHEET_NAME = "시간표_DB";
+    const SHEET_ID = "1yU71tpKBnr-de4kCwt_02Y8DS151D9Oprnc_XaaIDQ0";
+    const SHEET_NAME = "2026_2학기 시간표";
 
     function loadLiveCourses() {
       const callbackName = `bodeumSheet_${Date.now()}`;
@@ -1533,6 +1622,7 @@
       setupWizard();
       setupCourseFilters();
       setupMobileTabs();
+      setupMobileCourseSheet();
       document.querySelector("#clearBtn").addEventListener("click", resetTimetable);
       document.querySelector("#printBtn").addEventListener("click", printTimetable);
       document.querySelector("#pngBtn").addEventListener("click", downloadPNG);
@@ -1685,6 +1775,65 @@
     function setupMobileTabs() {
       document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
+    }
+
+    function setupMobileCourseSheet() {
+      const panel = document.getElementById("pane-settings");
+      const handle = document.getElementById("mobileSheetHandle");
+      if (!panel || !handle) return;
+
+      let startY = 0;
+      let startOffset = 0;
+      let lastOffset = 0;
+      let moved = false;
+      let suppressClick = false;
+
+      const closedOffset = () => Math.max(0, panel.getBoundingClientRect().height - 78);
+      const setOpen = open => {
+        panel.classList.toggle("sheet-open", open);
+        handle.setAttribute("aria-expanded", String(open));
+        panel.style.transform = "";
+      };
+
+      handle.addEventListener("pointerdown", event => {
+        if (window.innerWidth > 640) return;
+        startY = event.clientY;
+        startOffset = panel.classList.contains("sheet-open") ? 0 : closedOffset();
+        lastOffset = startOffset;
+        moved = false;
+        panel.style.transition = "none";
+        handle.setPointerCapture(event.pointerId);
+      });
+
+      handle.addEventListener("pointermove", event => {
+        if (!handle.hasPointerCapture(event.pointerId) || window.innerWidth > 640) return;
+        const delta = event.clientY - startY;
+        if (Math.abs(delta) > 5) moved = true;
+        lastOffset = Math.max(0, Math.min(closedOffset(), startOffset + delta));
+        panel.style.transform = `translateY(${lastOffset}px)`;
+      });
+
+      const finishDrag = event => {
+        if (!handle.hasPointerCapture(event.pointerId) || window.innerWidth > 640) return;
+        handle.releasePointerCapture(event.pointerId);
+        panel.style.transition = "";
+        const travel = event.clientY - startY;
+        const open = travel < -35 || (travel <= 35 && lastOffset < closedOffset() / 2);
+        suppressClick = moved;
+        setOpen(open);
+        setTimeout(() => { suppressClick = false; }, 0);
+      };
+
+      handle.addEventListener("pointerup", finishDrag);
+      handle.addEventListener("pointercancel", finishDrag);
+      handle.addEventListener("click", () => {
+        if (window.innerWidth > 640 || suppressClick) return;
+        setOpen(!panel.classList.contains("sheet-open"));
+      });
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 640) setOpen(false);
       });
     }
 
@@ -1885,7 +2034,7 @@
       return courses.filter(c =>
         (!grade || c.grades.includes(grade)) &&
         (!subject || c.subject === subject) &&
-        (!school || (c.schools || []).includes(school))
+        (!school || (c.schools || []).includes(school) || (c.schools || []).includes("공통"))
       );
     }
 
@@ -2438,7 +2587,7 @@ async function downloadComboPNG() {
     }
 
     function orderedSchools() {
-      const schools = unique(courses.flatMap(course => course.schools || []));
+      const schools = unique(courses.flatMap(course => course.schools || [])).filter(school => school !== "공통");
       return schools.sort((a, b) => {
         const ai = SCHOOL_ORDER.indexOf(a), bi = SCHOOL_ORDER.indexOf(b);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b, "ko");
