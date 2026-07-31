@@ -103,7 +103,8 @@
       overflow: hidden;
     }
 
-    .mobile-sheet-handle { display: none; }
+    .mobile-sheet-handle,
+    .mobile-sheet-save { display: none; }
 
     .section {
       padding: 16px;
@@ -1009,6 +1010,22 @@
         text-align: left;
       }
 
+      .mobile-sheet-save {
+        display: block;
+        position: absolute;
+        top: 16px;
+        right: 18px;
+        z-index: 3;
+        min-height: 36px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
       #pane-settings > .section:last-child {
         height: calc(44dvh - 68px);
         display: flex;
@@ -1070,8 +1087,8 @@
 
       #pane-timetable .paper-table .time-cell,
       #pane-timetable .paper-table .slot {
-        height: 68px;
-        min-height: 68px;
+        height: 34px;
+        min-height: 34px;
       }
 
       #pane-timetable .paper-table col.time-col {
@@ -1095,16 +1112,13 @@
         display: inline;
         font-size: 9px;
         font-weight: 800;
-        line-height: 1.18;
+        line-height: 1.1;
         word-break: keep-all;
         overflow-wrap: anywhere;
       }
 
       #pane-timetable .class-block .teacher {
-        display: block;
-        font-size: 8px;
-        line-height: 1.15;
-        margin-top: 3px;
+        display: none;
       }
 
       #pane-timetable .class-block .room,
@@ -1232,6 +1246,7 @@
         <button class="mobile-sheet-handle" id="mobileSheetHandle" type="button" aria-expanded="false">
           <strong>수업 선택</strong>
         </button>
+        <button class="mobile-sheet-save" id="mobileSheetSave" type="button">사진 저장</button>
 
         <!-- 학년 · 과목 선택 (wizard) -->
         <section class="section">
@@ -1403,8 +1418,12 @@
     /* ── Google Sheets live data ── */
     const SHEET_ID = "1yU71tpKBnr-de4kCwt_02Y8DS151D9Oprnc_XaaIDQ0";
     const SHEET_NAME = "2026_2학기 시간표";
+    let lastLiveLoadAt = 0;
 
     function loadLiveCourses() {
+      const now = Date.now();
+      if (now - lastLiveLoadAt < 5000) return;
+      lastLiveLoadAt = now;
       const callbackName = `bodeumSheet_${Date.now()}`;
       const script = document.createElement("script");
       const query = "select A,B,C,D,E,F,G,H,I,J,K,L where B is not null";
@@ -1637,15 +1656,53 @@
       const currentGrade = courseGradeFilter.value;
       const currentSubject = courseSubjectFilter.value;
       const currentSchool = courseSchoolFilter.value;
-      fillSelect(courseGradeFilter, ["", ...orderedGrades()], "전체");
-      fillSelect(courseSubjectFilter, ["", ...orderedSubjects()], "전체");
+
       fillSelect(courseSchoolFilter, ["", ...orderedSchools()], "전체");
-      if ([...courseGradeFilter.options].some(option => option.value === currentGrade)) courseGradeFilter.value = currentGrade;
-      if ([...courseSubjectFilter.options].some(option => option.value === currentSubject)) courseSubjectFilter.value = currentSubject;
       if ([...courseSchoolFilter.options].some(option => option.value === currentSchool)) courseSchoolFilter.value = currentSchool;
+
+      const school = courseSchoolFilter.value;
+      const middleSchools = new Set(["과천중", "율목중", "문원중"]);
+      const highSchools = new Set(["과천고", "과천여고", "중앙고", "인덕원고", "외고"]);
+      const schoolCourses = courses.filter(course =>
+        !school ||
+        (course.schools || []).includes(school) ||
+        (course.schools || []).includes("공통")
+      );
+
+      let grades = GRADE_ORDER.filter(grade =>
+        schoolCourses.some(course => (course.grades || []).includes(grade))
+      );
+      if (middleSchools.has(school)) grades = grades.filter(grade => ["중1", "중2", "중3"].includes(grade));
+      if (highSchools.has(school)) grades = grades.filter(grade => ["고1", "고2", "고3"].includes(grade));
+
+      fillSelect(courseGradeFilter, ["", ...grades], "전체");
+      if ([...courseGradeFilter.options].some(option => option.value === currentGrade)) {
+        courseGradeFilter.value = currentGrade;
+      }
+
+      const grade = courseGradeFilter.value;
+      let subjects = SUBJECT_ORDER.filter(subject =>
+        schoolCourses.some(course =>
+          course.subject === subject &&
+          (!grade || (course.grades || []).includes(grade))
+        )
+      );
+      if (school !== "외고") {
+        subjects = subjects.filter(subject => !["중국어", "일본어"].includes(subject));
+      }
+
+      fillSelect(courseSubjectFilter, ["", ...subjects], "전체");
+      if ([...courseSubjectFilter.options].some(option => option.value === currentSubject)) {
+        courseSubjectFilter.value = currentSubject;
+      }
     }
 
     loadLiveCourses();
+    window.setInterval(loadLiveCourses, 30000);
+    window.addEventListener("focus", loadLiveCourses);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") loadLiveCourses();
+    });
 
     /* ── normalise ── */
     function normalizeCourse(c) {
@@ -1670,6 +1727,7 @@
       document.querySelector("#clearBtn").addEventListener("click", resetTimetable);
       document.querySelector("#printBtn").addEventListener("click", printTimetable);
       document.querySelector("#pngBtn").addEventListener("click", downloadPNG);
+      document.querySelector("#mobileSheetSave")?.addEventListener("click", downloadPNG);
       document.querySelector("#comboTableBtn").addEventListener("click", openComboTable);
       document.querySelector("#allComboTableBtn").addEventListener("click", openAllComboTable);
     }
@@ -1809,11 +1867,16 @@
     }
 
     function setupCourseFilters() {
-      const gradeOptions = orderedGrades();
-      fillSelect(courseGradeFilter, ["", ...gradeOptions], "전체");
-      fillSelect(courseSubjectFilter, ["", ...orderedSubjects()], "전체");
-      fillSelect(courseSchoolFilter, ["", ...orderedSchools()], "전체");
-      [courseGradeFilter, courseSubjectFilter, courseSchoolFilter].forEach(el => el.addEventListener("change", renderCourseList));
+      refreshCourseFilters();
+      courseSchoolFilter.addEventListener("change", () => {
+        refreshCourseFilters();
+        renderCourseList();
+      });
+      courseGradeFilter.addEventListener("change", () => {
+        refreshCourseFilters();
+        renderCourseList();
+      });
+      courseSubjectFilter.addEventListener("change", renderCourseList);
     }
 
     function setupMobileTabs() {
@@ -2054,13 +2117,10 @@
     }
 
     function mobileCourseLabel(course, fallback) {
-      const cleaned = String(course.title || fallback || "")
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\([^)]*(?:개강|내신|특강|반)[^)]*\)/g, " ")
-        .replace(/[_·]\s*(?:월|화|수|목|금|토|일)+(?:\s*[-~]\s*(?:월|화|수|목|금|토|일)+)?\s*$/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-      return cleaned || fallback;
+      const title = String(course.title || fallback || "").replace(/\s+/g, "");
+      const matchedGrade = title.match(/외고[123]|초(?:5-6|5|6)|중[123]|고[123]/)?.[0];
+      const grade = matchedGrade || course.grades?.[0] || "";
+      return `${grade} ${course.subject}`.trim() || fallback;
     }
 
     function renderCases() {

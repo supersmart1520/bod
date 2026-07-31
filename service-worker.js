@@ -1,4 +1,4 @@
-const CACHE_NAME = "bodeum-timetable-v13";
+const CACHE_NAME = "bodeum-timetable-v15";
 const APP_SHELL = [
   "./",
   "./index.html",
